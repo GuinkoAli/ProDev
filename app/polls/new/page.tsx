@@ -2,8 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProtectedRoute } from "@/components/protected-route";
 
-export default function NewPollPage() {
+function NewPollPage() {
   return (
     <div className="mx-auto max-w-2xl p-4">
       <Card>
@@ -28,6 +29,15 @@ export default function NewPollPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Wrap the page with ProtectedRoute to require authentication
+export default function ProtectedNewPollPage() {
+  return (
+    <ProtectedRoute>
+      <NewPollPage />
+    </ProtectedRoute>
   );
 }
 
