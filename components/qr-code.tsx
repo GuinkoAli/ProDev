@@ -21,3 +21,5 @@ export function QrCode({ url, size = 160, className }: QrCodeProps) {
     />
   );
 }
+
+
