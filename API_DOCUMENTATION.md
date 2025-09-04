@@ -368,3 +368,5 @@ For API-related issues:
 2. Verify authentication status
 3. Check request format and required fields
 4. Review the database schema and RLS policies
+
+

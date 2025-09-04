@@ -1,24 +1,10 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from '@supabase/ssr'
 
-let browserClient: SupabaseClient | null = null;
-
-export function getSupabaseClient(): SupabaseClient {
-  if (typeof window === "undefined") {
-    // In server environments, create a new client per request scope as needed
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-    );
-  }
-
-  if (!browserClient) {
-    browserClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-    );
-  }
-
-  return browserClient;
+// NOTE: This file is for client-side Supabase access.
+// Do not use it in Server Components or Route Handlers.
+export const getSupabaseClient = () => {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 }
-
-

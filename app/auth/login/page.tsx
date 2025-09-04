@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
@@ -40,6 +41,22 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setOauthLoading(true);
+      const supabase = getSupabaseClient();
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: typeof window !== "undefined" ? `${window.location.origin}/polls` : undefined,
+        },
+      });
+    } catch (err) {
+      setError("Failed to start Google sign-in");
+      setOauthLoading(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-md p-4">
       <Card>
@@ -47,57 +64,67 @@ export default function LoginPage() {
           <CardTitle>Login</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                disabled={loading}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign in"}
+          <div className="space-y-4">
+            <Button
+              type="button"
+              className="w-full"
+              variant="secondary"
+              onClick={handleGoogleSignIn}
+              disabled={oauthLoading}
+            >
+              {oauthLoading ? "Redirecting..." : "Continue with Google"}
             </Button>
-          </form>
-          <div className="mt-4 space-y-2">
-            <p className="text-sm text-gray-600">
-              No account?{" "}
-              <Link className="underline" href="/auth/register">
-                Sign up
-              </Link>
-            </p>
-            <p className="text-sm text-gray-600">
-              <Link className="underline" href="/auth/forgot-password">
-                Forgot password?
-              </Link>
-            </p>
+            <div className="h-px bg-gray-200" />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Signing in..." : "Sign in"}
+              </Button>
+            </form>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">
+                No account?{" "}
+                <Link className="underline" href="/auth/register">
+                  Sign up
+                </Link>
+              </p>
+              <p className="text-sm text-gray-600">
+                <Link className="underline" href="/auth/forgot-password">
+                  Forgot password?
+                </Link>
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-

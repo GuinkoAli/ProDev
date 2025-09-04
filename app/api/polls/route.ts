@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 // GET /api/polls - list current user's polls
 export async function GET() {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const supabase = getSupabaseClient();
     
     // Get the current user's session
@@ -43,7 +43,7 @@ export async function GET() {
 // POST /api/polls - create a poll
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const supabase = getSupabaseClient();
     
     // Get the current user's session
@@ -161,5 +161,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-

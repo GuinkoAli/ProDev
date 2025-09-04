@@ -4,17 +4,22 @@ import { getSupabaseClient } from "@/lib/supabaseClient";
 // GET /api/polls/[id] - fetch poll details
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const supabase = getSupabaseClient();
 
     // Get the complete poll with options using the helper function
     const { data: poll, error } = await supabase
-      .rpc('get_poll_with_options', { poll_uuid: id });
+      .rpc('get_poll_with_options', { poll_uuid: id })
+      .single();
 
     if (error) {
+      // PGRST116: "The result contains 0 rows" - this is the expected error when no poll is found or RLS prevents access.
+      if (error.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Poll not found' }, { status: 404 });
+      }
       console.error('Database error:', error);
       return NextResponse.json(
         { error: "Failed to fetch poll" },
@@ -22,14 +27,7 @@ export async function GET(
       );
     }
 
-    if (!poll || poll.length === 0) {
-      return NextResponse.json(
-        { error: "Poll not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ poll: poll[0] });
+    return NextResponse.json({ poll });
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json(
@@ -42,10 +40,10 @@ export async function GET(
 // PUT /api/polls/[id] - update poll
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const supabase = getSupabaseClient();
     
     // Get the current user's session
@@ -61,27 +59,6 @@ export async function PUT(
     const body = await request.json();
     const { question, description, status, allowMultipleVotes, expiresAt, isPublic, options } = body;
 
-    // Check if user owns this poll
-    const { data: existingPoll, error: ownershipError } = await supabase
-      .from('polls')
-      .select('creator_id')
-      .eq('id', id)
-      .single();
-
-    if (ownershipError || !existingPoll) {
-      return NextResponse.json(
-        { error: "Poll not found" },
-        { status: 404 }
-      );
-    }
-
-    if (existingPoll.creator_id !== user.id) {
-      return NextResponse.json(
-        { error: "Forbidden - you can only update your own polls" },
-        { status: 403 }
-      );
-    }
-
     // Update poll fields
     const updateData: any = {};
     if (question !== undefined) updateData.question = question;
@@ -92,16 +69,23 @@ export async function PUT(
     if (isPublic !== undefined) updateData.is_public = isPublic;
 
     if (Object.keys(updateData).length > 0) {
+      // The RLS policy "Users can update their own polls." ensures this only succeeds for the creator.
+      // We chain .select().single() to check if a row was actually updated.
       const { error: updateError } = await supabase
         .from('polls')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', id)
+        .select('id')
+        .single();
 
       if (updateError) {
+        // If no row is found that matches the id AND the RLS policy, a PGRST116 error is returned.
+        if (updateError.code === 'PGRST116') {
+          return NextResponse.json({ error: "Poll not found or permission denied" }, { status: 404 });
+        }
         console.error('Poll update error:', updateError);
         return NextResponse.json(
-          { error: "Failed to update poll" },
-          { status: 500 }
+          { error: "Failed to update poll" }, { status: 500 }
         );
       }
     }
@@ -126,7 +110,7 @@ export async function PUT(
       const pollOptions = options.map((option: string, index: number) => ({
         poll_id: id,
         option_text: option,
-        display_order: index + 1
+        display_order: index
       }));
 
       const { error: insertOptionsError } = await supabase
@@ -144,17 +128,18 @@ export async function PUT(
 
     // Get the updated poll
     const { data: updatedPoll, error: fetchError } = await supabase
-      .rpc('get_poll_with_options', { poll_uuid: id });
+      .rpc('get_poll_with_options', { poll_uuid: id })
+      .single();
 
-    if (fetchError) {
+    if (fetchError || !updatedPoll) {
       console.error('Poll fetch error:', fetchError);
       return NextResponse.json(
-        { message: "Poll updated successfully" },
-        { status: 200 }
+        { error: "Failed to fetch updated poll" },
+        { status: 500 }
       );
     }
 
-    return NextResponse.json({ poll: updatedPoll[0] });
+    return NextResponse.json({ poll: updatedPoll });
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json(
@@ -167,10 +152,10 @@ export async function PUT(
 // DELETE /api/polls/[id] - delete poll
 export async function DELETE(
   _req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const supabase = getSupabaseClient();
     
     // Get the current user's session
@@ -183,38 +168,24 @@ export async function DELETE(
       );
     }
 
-    // Check if user owns this poll
-    const { data: existingPoll, error: ownershipError } = await supabase
-      .from('polls')
-      .select('creator_id')
-      .eq('id', id)
-      .single();
-
-    if (ownershipError || !existingPoll) {
-      return NextResponse.json(
-        { error: "Poll not found" },
-        { status: 404 }
-      );
-    }
-
-    if (existingPoll.creator_id !== user.id) {
-      return NextResponse.json(
-        { error: "Forbidden - you can only delete your own polls" },
-        { status: 403 }
-      );
-    }
-
-    // Delete the poll (options and votes will be cascaded)
+    // The RLS policy "Users can delete their own polls." ensures this only succeeds for the creator.
+    // The ON DELETE CASCADE on foreign keys will clean up related options and votes.
+    // We chain .select().single() to check if a row was actually deleted.
     const { error: deleteError } = await supabase
       .from('polls')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select('id')
+      .single();
 
     if (deleteError) {
+      // If no row is found that matches the id AND the RLS policy, a PGRST116 error is returned.
+      if (deleteError.code === 'PGRST116') {
+        return NextResponse.json({ error: "Poll not found or permission denied" }, { status: 404 });
+      }
       console.error('Poll deletion error:', deleteError);
       return NextResponse.json(
-        { error: "Failed to delete poll" },
-        { status: 500 }
+        { error: "Failed to delete poll" }, { status: 500 }
       );
     }
 
@@ -227,5 +198,3 @@ export async function DELETE(
     );
   }
 }
-
-

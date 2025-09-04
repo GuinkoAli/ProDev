@@ -19,8 +19,8 @@ The database schema consists of four main tables:
 3. Add these to your `.env.local` file:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+NEXT_PUBLIC_SUPABASE_URL="https://rffxgavyrkqpzuqahvud.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmZnhnYXZ5cmtxcHp1cWFodnVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzOTc1MzMsImV4cCI6MjA3MTk3MzUzM30.dPd2Q7MpsnuUm6s1t1gH3jqkZHemd_-pmKaFIeZNylw"
 ```
 
 ### 2. Run the Database Schema
@@ -151,3 +151,5 @@ For database-related issues:
 2. Review the SQL schema for syntax errors
 3. Verify environment variables are correctly set
 4. Test in Supabase SQL editor first
+
+

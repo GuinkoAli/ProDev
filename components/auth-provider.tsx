@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { User, Session, AuthError } from "@supabase/supabase-js";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { toErrorMessage } from "@/lib/utils";
 
 interface UserProfile {
   id: string;
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Error fetching user profile:', error);
+        console.error(`Error fetching user profile: ${toErrorMessage(error)}`);
         return null;
       }
 
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         created_at: user?.created_at,
       };
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error(`Error fetching user profile: ${toErrorMessage(error)}`);
       return null;
     }
   }, [user]);
@@ -93,7 +94,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, refreshUser]);
 
   useEffect(() => {
-    const supabase = getSupabaseClient();
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+    } catch (error) {
+      console.error(`Supabase init error: ${toErrorMessage(error)}`);
+      setLoading(false);
+      return;
+    }
 
     // Get initial session
     const getInitialSession = async () => {
@@ -101,13 +109,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user?.id) {
           const profile = await fetchUserProfile(session.user.id);
           setUserProfile(profile);
         }
       } catch (error) {
-        console.error('Error getting initial session:', error);
+        console.error(`Error getting initial session: ${toErrorMessage(error)}`);
       } finally {
         setLoading(false);
       }
@@ -120,14 +128,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user?.id) {
           const profile = await fetchUserProfile(session.user.id);
           setUserProfile(profile);
         } else {
           setUserProfile(null);
         }
-        
+
         setLoading(false);
       }
     );
@@ -141,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
       setUserProfile(null);
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error(`Error signing out: ${toErrorMessage(error)}`);
     }
   };
 

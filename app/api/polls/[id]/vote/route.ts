@@ -4,10 +4,10 @@ import { getSupabaseClient } from "@/lib/supabaseClient";
 // POST /api/polls/[id]/vote - record a vote
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: pollId } = await params;
+    const { id: pollId } = params;
     const supabase = getSupabaseClient();
     
     // Get the current user's session
@@ -137,10 +137,10 @@ export async function POST(
 // GET /api/polls/[id]/vote - get user's vote on this poll
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: pollId } = await params;
+    const { id: pollId } = params;
     const supabase = getSupabaseClient();
     
     // Get the current user's session
@@ -181,5 +181,3 @@ export async function GET(
     );
   }
 }
-
-

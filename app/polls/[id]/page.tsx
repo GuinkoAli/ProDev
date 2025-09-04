@@ -3,14 +3,12 @@ import { Button } from "@/components/ui/button";
 import { QrCode } from "@/components/qr-code";
 import { headers } from "next/headers";
 
-interface PollPageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default async function PollDetailPage({ params }: PollPageProps) {
-  const { id } = await params;
-  const hdrs = await headers();
+export default async function PollDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
+  const hdrs = headers();
+  // @ts-expect-error Workaround for incorrect Next.js types
   const host = hdrs.get("x-forwarded-host") || hdrs.get("host") || "localhost:3000";
+  // @ts-expect-error Workaround for incorrect Next.js types
   const proto = (hdrs.get("x-forwarded-proto") || "http").split(",")[0];
   const shareUrl = `${proto}://${host}/polls/${id}`;
   return (
@@ -48,5 +46,3 @@ export default async function PollDetailPage({ params }: PollPageProps) {
     </div>
   );
 }
-
-

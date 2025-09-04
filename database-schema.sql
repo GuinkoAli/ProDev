@@ -5,7 +5,11 @@
 ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret-here';
 
 -- Create custom types
-CREATE TYPE poll_status AS ENUM ('active', 'closed', 'draft');
+DO $ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'poll_status') THEN
+        CREATE TYPE poll_status AS ENUM ('active', 'closed', 'draft');
+    END IF;
+END $;
 
 -- Users table (extends Supabase auth.users)
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -305,3 +309,5 @@ GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;
+
+

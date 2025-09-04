@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useAuth } from "./auth-provider";
+import { useAuth } from "@/components/auth-provider";
 
 const nav = [
   { href: "/polls", label: "Polls" },
@@ -65,5 +65,3 @@ export function SiteHeader() {
     </header>
   );
 }
-
-
